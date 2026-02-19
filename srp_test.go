@@ -23,6 +23,8 @@ func TestNewSRP(t *testing.T) {
 		return new(big.Int)
 	}), srp.X(func(*srp.SRP, []byte, []byte, []byte) *big.Int {
 		return new(big.Int)
+	}), srp.M1(func(*srp.SRP, *big.Int, *big.Int, []byte, []byte, []byte) []byte {
+		return []byte{0x01}
 	}))
 
 	assert.NotNil(t, s)

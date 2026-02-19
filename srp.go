@@ -18,6 +18,7 @@ type SRP struct {
 	x func(*SRP, []byte, []byte, []byte) *big.Int
 	k func(*SRP) *big.Int
 	u func(*SRP, *big.Int, *big.Int) *big.Int
+	m func(*SRP, *big.Int, *big.Int, []byte, []byte, []byte) []byte
 }
 
 var (
@@ -102,9 +103,28 @@ func (s *SRP) SetU(f func(*SRP, *big.Int, *big.Int) *big.Int) error {
 	return s.setOption(U(f))
 }
 
+// M1 overrides the default function for computing the M1 proof.
+func M1(f func(*SRP, *big.Int, *big.Int, []byte, []byte, []byte) []byte) func(*SRP) error {
+	return func(s *SRP) error {
+		s.m = f
+
+		return nil
+	}
+}
+
+// SetM1 overrides the default function for computing the M1 proof.
+func (s *SRP) SetM1(f func(*SRP, *big.Int, *big.Int, []byte, []byte, []byte) []byte) error {
+	return s.setOption(M1(f))
+}
+
 // Group returns the Group in use.
 func (s *SRP) Group() *Group {
 	return s.g
+}
+
+// Hash returns the Hash in use.
+func (s *SRP) Hash() crypto.Hash {
+	return s.h
 }
 
 func (s *SRP) multiplier() *big.Int {
@@ -176,9 +196,13 @@ func (s *SRP) computeK(xS *big.Int) []byte {
 }
 
 func (s *SRP) computeM1(xA, xB *big.Int, xK, identity, salt []byte) []byte {
+	if s.m != nil {
+		return s.m(s, xA, xB, xK, identity, salt)
+	}
+
 	// M1 = H(H(N) XOR H(g) | H(U) | s | A | B | K)
 	xor := make([]byte, s.h.New().Size())
-	_ = xorBytes(xor, s.HashBytes(s.Group().N.Bytes()), s.HashBytes(s.Group().G.Bytes()))
+	_ = XorBytes(xor, s.HashBytes(s.Group().N.Bytes()), s.HashBytes(s.Group().G.Bytes()))
 
 	return s.HashBytes(xor, s.HashBytes(identity), salt, xA.Bytes(), xB.Bytes(), xK)
 }

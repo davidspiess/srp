@@ -2,7 +2,7 @@
 
 package srp
 
-func xorBytes(dst, x, y []byte) int {
+func XorBytes(dst, x, y []byte) int {
 	n := len(x)
 
 	if len(y) < n {

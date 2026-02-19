@@ -4,6 +4,6 @@ package srp
 
 import "crypto/subtle"
 
-func xorBytes(dst, x, y []byte) int {
+func XorBytes(dst, x, y []byte) int {
 	return subtle.XORBytes(dst, x, y)
 }
