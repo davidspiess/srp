@@ -18,6 +18,8 @@ type SRP struct {
 	x func(*SRP, []byte, []byte, []byte) *big.Int
 	k func(*SRP) *big.Int
 	u func(*SRP, *big.Int, *big.Int) *big.Int
+
+	rfc5054Compatibility bool
 }
 
 var (
@@ -102,6 +104,22 @@ func (s *SRP) SetU(f func(*SRP, *big.Int, *big.Int) *big.Int) error {
 	return s.setOption(U(f))
 }
 
+// RFC5054Compatibility toggles compatibility behaviour for proof generation.
+// If enabled, g is padded to the group size when calculating M1.
+func RFC5054Compatibility(enabled bool) func(*SRP) error {
+	return func(s *SRP) error {
+		s.rfc5054Compatibility = enabled
+
+		return nil
+	}
+}
+
+// SetRFC5054Compatibility toggles compatibility behaviour for proof
+// generation. If enabled, g is padded to the group size when calculating M1.
+func (s *SRP) SetRFC5054Compatibility(enabled bool) error {
+	return s.setOption(RFC5054Compatibility(enabled))
+}
+
 // Group returns the Group in use.
 func (s *SRP) Group() *Group {
 	return s.g
@@ -177,8 +195,13 @@ func (s *SRP) computeK(xS *big.Int) []byte {
 
 func (s *SRP) computeM1(xA, xB *big.Int, xK, identity, salt []byte) []byte {
 	// M1 = H(H(N) XOR H(g) | H(U) | s | A | B | K)
+	g := s.Group().G.Bytes()
+	if s.rfc5054Compatibility {
+		g = util.Pad(s.Group().G, s.Group().Size)
+	}
+
 	xor := make([]byte, s.h.New().Size())
-	_ = xorBytes(xor, s.HashBytes(s.Group().N.Bytes()), s.HashBytes(s.Group().G.Bytes()))
+	_ = xorBytes(xor, s.HashBytes(s.Group().N.Bytes()), s.HashBytes(g))
 
 	return s.HashBytes(xor, s.HashBytes(identity), salt, xA.Bytes(), xB.Bytes(), xK)
 }
