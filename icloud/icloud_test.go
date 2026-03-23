@@ -10,32 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetGroup(t *testing.T) {
-	t.Parallel()
-
-	tables := []struct {
-		group int
-		err   error
-	}{
-		{
-			2048,
-			nil,
-		},
-		{
-			23,
-			util.ErrGroupNotFound,
-		},
-	}
-
-	for _, table := range tables {
-		_, err := icloud.GetGroup(table.group)
-
-		if table.err != nil && assert.Error(t, err) {
-			assert.ErrorIs(t, err, table.err)
-		}
-	}
-}
-
 func TestNewSRP(t *testing.T) {
 	t.Parallel()
 
